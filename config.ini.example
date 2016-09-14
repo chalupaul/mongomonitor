@@ -1,0 +1,37 @@
+[mongodb]
+;
+; One per line. The [] is important.
+;
+mongos[] = "127.0.0.1:27017"
+mongos[] = "127.0.0.1:27017"
+;
+; The username should have the 'backup' and 'restore' roles in the admin db.
+; authdb is the database to auth against. Shouldn't have to change from admin.
+; Those permissions are by default sufficient to check replication status too.
+;
+; Note: only 1 word passwords are supported currently. Spaces make it mad.
+; 
+; On each mongos and shard (not config servers), you need to run the following
+; (or something like it) from within the mongo shell:
+;
+; use admin
+; db.createUser({user:"backup", pwd:"CHANGE_ME", roles: ["backup", "restore"]})
+;
+username = "backup"
+password = "CHANGE_ME"
+authdb = "admin"
+;
+[backups]
+;
+; Where to store backups
+;
+directory = "/path/to/backups"
+;
+; delete anything older than this many days
+; Setting this to 0 will delete every backup
+;
+retention_days = 14
+;
+; only keep this many old backups
+;
+backup_count = 10
