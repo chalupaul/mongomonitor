@@ -1,0 +1,17 @@
+{{#failures}}
+<div>
+	<h2>Error Logs</h2>
+	<ul>
+		<li>
+			<h3>{{name}}</h3>
+			<ul>
+			{{#hosts}}
+				<li><span class="host"><b>{{url}}</b></span>
+					<br/>
+					<span class="message"><pre>{{message}}</pre></span></li>
+			{{/hosts}}
+			</ul>
+		</li>
+	</ul>
+</div>
+{{/failures}}

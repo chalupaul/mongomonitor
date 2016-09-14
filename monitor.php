@@ -1,5 +1,14 @@
 <?php
 require_once(join(DIRECTORY_SEPARATOR, [dirname(__FILE__), 'common.php']));
+# pour one out for the template homies
+require_once(join(DIRECTORY_SEPARATOR, [dirname(__FILE__), 'mustache.php-2.11.1', 'src', 'Mustache', 'Autoloader.php']));
+Mustache_Autoloader::register();
+
+$m = new Mustache_Engine(array(
+	'loader' => new Mustache_Loader_FilesystemLoader(dirname(__FILE__) . '/views'),
+	'partials_loader' => new Mustache_Loader_FilesystemLoader(dirname(__FILE__) . '/views/partials')
+));
+
 $config = loadConfig();
 
 # These aren't one big collection of replica sets becaues you shouldn't treat them the same.
@@ -56,7 +65,7 @@ foreach([$shards, $configsvrs] as $cluster) {
 			$output = commandRunner(makeCommandString($server, "rs.status()"));
 			$isOK = preg_match('/"ok" : 1/', $output);
 			$connFailure = preg_match('/exception: connect failed/', $output);
-			if ($isOK != 1 && $connFailure != 1) {
+			if ($isOK != 1 && $connFailure != 1) { 
 				# We don't care about connection failures, just replica set failures.
 				$failures[$shardName]['replicaSetError'] = $output;
 			}
@@ -66,52 +75,143 @@ foreach([$shards, $configsvrs] as $cluster) {
 }
 
 
+# everything from here on out is transformation to views. Since php doesn't have hashes, mustache can't tell
+# the difference between an array with keys and an array of values. So these functions just massage the data
+# for the view below.
+function makeMongos() {
+	global $mongos;
+	global $failures;
+	$vals = array();
+	foreach($mongos['mongos'] as $host) {
+		$hasError = in_array($host, array_keys($failures['mongos']));
+		$errorStatus = makeErrorText($hasError);
+		array_push($vals, array(
+			'url' => $host,
+			'errorStatus' => $errorStatus
+		));
+	}
+	return $vals;
+}
+
+function makeReplSets() {
+	global $shards;
+	global $failures;
+	$vals = array();
+	foreach(array_keys($shards) as $shardName) {
+		$v = array();
+		$v['name'] = $shardName;
+		$v['hosts'] = array();
+		if (in_array('replicaSetError', array_keys($failures[$shardName]))) {
+			$v['message'] = 'Replica Set Errors Detected!';
+		}
+		foreach($shards[$shardName] as $host) {
+			$hasError = in_array($host, array_keys($failures[$shardName]));
+			$errorStatus = makeErrorText($hasError);
+			array_push($v['hosts'], array(
+				'url' => $host,
+				'errorStatus' => $errorStatus
+			));
+		}
+		array_push($vals, $v);
+	}
+	return $vals;
+}
+
+function makeConfigServers() {
+	global $configsvrs;
+	global $failures;
+	$returnVal = array();
+	$returnVal["name"] = "Config Servers";
+	if (in_array('replicaSetError', array_keys($failures['configsvr']))) {
+		$returnVal['message'] = 'Replica Set Errors Detected!';
+	}
+	$vals = array();
+	foreach($configsvrs['configsvr'] as $host) {
+		$hasError = in_array($host, array_keys($failures['configsvr']));
+		$errorStatus = makeErrorText($hasError);
+		array_push($vals, array(
+			'url' => $host,
+			'errorStatus' => $errorStatus
+		));
+	}
+	$returnVal["hosts"] = $vals;
+	
+	return $returnVal;
+}
+
+function makeLogs() {
+	global $failures;
+	$vals = array();
+	foreach(array_keys($failures) as $clusterType) {
+		$v = array();
+		foreach(array_keys($failures[$clusterType]) as $host) {
+			array_push($v, array(
+				"url" => $host,
+				"message" => $failures[$clusterType][$host]
+			));
+		}
+		array_push($vals, array(
+			"name" => $clusterType,
+			"hosts" => $v
+		));
+	}
+	return $vals;
+}
+
+function makeBackupErrors() {
+	$backupErrorsFile = locateBackupFile('BACKUP-FAILURES');
+	$returnVals = array();
+	$vals = array();
+	if (file_exists($backupErrorsFile)) {
+		$contents = file($backupErrorsFile);
+		if (!empty($contents)) {
+			foreach ($contents as $datestamp) {
+				$datestamp = trim($datestamp);
+				$logFile = locateBackupFile('backup-' . $datestamp . '.log');
+				$logContents = file_get_contents($logFile);
+				array_push($vals, array(
+					'date' => $datestamp,
+					'message' => $logContents
+				));
+			}
+		}
+	}
+	if (!empty($vals)) {
+		$returnVals = array(
+			"message" => "Truncate $backupErrorsFile to acknowldge the errors.",
+			"logs" => $vals
+		);
+	}
+	return $returnVals;
+}
+
+function makeErrorText($b) {
+	# $b is inverse. True is false.
+	$text = null;
+	if (!$b) {
+		$text = 'OK';
+	} else {
+		$text = 'NOT OK';
+	}
+	return $text;
+}
+
+# Make everything unilateral for the views
+$tpl = array(
+	"mongos" => array(
+		"name" => "Mongos",
+		"hosts" => makeMongos()
+	),
+	"shards" => makeReplSets(),
+	"configsvrs" => makeConfigServers(),
+	"failures" => makeLogs(),
+	"backups" => makeBackupErrors()
+);
+
+if (!empty($tpl['failures']) || !empty($tpl['backups'])) {
+	http_response_code(503);
+}
+# all that for 1 line....
+echo $m->render('layout', $tpl);
 
 ?>
-<html>
-<body>
-<?
-# I dislike doing this stuff, but this is supposed to be a "no external deps" sort of project.
-foreach([$mongos, $configsvrs, $shards] as $role) {
-	$output = '';
-	foreach (array_keys($role) as $roleName) {
-		$output .= "<h2>$roleName</h2>\n";
-		$output .= "<ul>\n";
-		if (in_array("replicaSetError", array_keys($failures[$roleName]))) {
-			$output .= "<li><h3>Replica Set Errors Detected!</h3></li>\n";
-		}
-		foreach ($role[$roleName] as $server) {
-			$hasError = in_array($server, array_keys($failures[$roleName]));
-			if ($hasError) {
-				$statusText = 'NOT OK';
-			} else {
-				$statusText = 'OK';
-			}
-			$output .= "<li><span>$server</span><span>$statusText</span></li>\n";
-		}
-		$output .= "</ul>\n";
-	}
-	print($output);
-}
-if ($failures != []) {
-	print("<h2>Raw Errors</h2>");
-	print("<div>\n");
-	foreach(array_keys($failures) as $componentName) { # like 'mongos', or 'shard42'
-		print("<div>\n");
-		print("<h3>$componentName</h3>\n");
-		print("<ul>\n");
-		foreach(array_keys($failures[$componentName]) as $host) { # like '127.0.0.1:27017' or replicafailures
-			print("<li><b>$host</b>\n");
-			print("<pre>");
-			print_r($failures[$componentName][$host]);
-			print("</pre>\n");
-			print("</li>\n");
-		}
-		print("</ul>\n");
-		print("</div>\n");
-	}
-	print("</div>\n");
-}
-?>
-</body>
-</html>

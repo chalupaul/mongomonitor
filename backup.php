@@ -29,11 +29,12 @@ if ($dbs == null) {
 if (!is_dir($config['directory'])) {
 	mkdir($config['directory'], 0755, true);
 }
-$archiveName = 'backup-' .date('Y-m-d_H:i') . '.gz';
-$filename = join(DIRECTORY_SEPARATOR, [$config['directory'], $archiveName]);
+$dateStamp = date('Y-m-d_H:i'); # base for almost everything
+
+$archiveName = 'backup-' . $dateStamp . '.gz';
+$filename = locateBackupFile($archiveName);
 
 $options = [
-	"--quiet",
 	"--host", $mongosIp,
 	"-u", $config['username'],
 	"-p", $config['password'],
@@ -45,13 +46,21 @@ $options = [
 
 $commandParams = combineArrays(['mongodump'], $options); 
 $command = join(' ', $commandParams);
-#TODO: Uncomment
-print(shell_exec($command));
+$output = shell_exec($command);
+
+if (preg_match('/Failed:/', $output)) {
+	$file = locateBackupFile('BACKUP-FAILURES');
+	file_put_contents($file, $dateStamp . "\n", FILE_APPEND);
+	print($output); # make sure the user sees errors.
+}
+# Write logfile
+$logFile = locateBackupFile('backup-' . $dateStamp . '.log');
+file_put_contents($logFile, $output);
 
 # Now we cleanup the old ones. Anything older than number of days, and only the latest number of files
 function getOldBackups() {
 	global $config;
-	return glob(join(DIRECTORY_SEPARATOR, [$config['directory'], "backup-*.gz"]));
+	return glob(locateBackupFile("backup-*.gz"));
 }
 
 if ($config['backup_count'] != null) {
@@ -73,4 +82,22 @@ if ($config['retention_days'] != null) {
 		}
 	}
 }
+
+# Finally just get rid of any log files that belong to backups that were deleted.
+function removeSuffix($string) {
+	$fixed = preg_replace('/.[^.]*$/', '', $string);
+	return $fixed;
+}
+
+$backupFiles = getOldBackups();
+$backupDates = array_map("removeSuffix", $backupFiles);
+
+$logFiles = glob(locateBackupFile("backup-*.log"));
+$logDates = array_map("removeSuffix", $logFiles);
+
+$to_delete = array_diff($logDates, $backupDates);
+foreach($to_delete as $file) {
+	unlink($file . '.log');
+}
+
 ?>

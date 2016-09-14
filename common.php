@@ -63,7 +63,7 @@ function commandRunner($command, $tries=3) {
 		# If you were to change this to 10 3 second tries, you'd just keep
 		# connections permanently in CLOSE_WAIT state and kind of defeat
 		# the purpose of waiting for them to clear.
-		sleep(1);
+		sleep(10);
 	}
 	return $output;
 }
@@ -78,5 +78,11 @@ function combineArrays($a, $b) {
 		array_diff($a, $b),
 		array_diff($b, $a)
 	);
+}
+
+function locateBackupFile($fileName) {
+	global $config;
+	# There's so much looking in this directory.
+	return join(DIRECTORY_SEPARATOR, [$config['directory'], $fileName]);
 }
 ?>

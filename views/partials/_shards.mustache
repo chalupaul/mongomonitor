@@ -1,0 +1,16 @@
+<div>
+	<h2>Shards</h2>
+	<ul>
+		{{#shards}}
+		<li>
+			<h3>{{name}}</h3>
+			<b><i>{{message}}</i></b>
+			<ul>
+			{{#hosts}}
+				<li><span class="host">{{url}}</span><span class="message">{{errorStatus}}</span></li>
+			{{/hosts}}
+			</ul>
+		</li>
+		{{/shards}}
+	</ul>
+</div>

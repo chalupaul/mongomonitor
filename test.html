@@ -1,0 +1,75 @@
+<html>
+<head>
+	<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+		<div>
+			<h2>Mongos</h2>
+			<ul>
+				<li><span class="host">23.253.125.221:27017</span><span class="message">OK</span></li>
+				<li><span class="host">23.253.225.108:27017</span><span class="message">OK</span></li>
+			</ul>
+		</div>
+		<div>
+			<h2>Config Servers</h2>
+			<b><i></i></b>
+			<ul>
+				<li><span class="host">23.253.225.113:27017</span><span class="message">OK</span></li>
+				<li><span class="host">23.253.225.123:27017</span><span class="message">NOT OK</span></li>
+				<li><span class="host">23.253.225.138:27017</span><span class="message">OK</span></li>
+			</ul>
+		</div>
+		<div>
+			<h2>Shards</h2>
+			<ul>
+				<li>
+					<h3>shard1</h3>
+					<b><i></i></b>
+					<ul>
+						<li><span class="host">104.130.135.31:27017</span><span class="message">OK</span></li>
+						<li><span class="host">23.253.244.10:27017</span><span class="message">OK</span></li>
+						<li><span class="host">23.253.244.116:27017</span><span class="message">OK</span></li>
+					</ul>
+				</li>
+				<li>
+					<h3>shard2</h3>
+					<b><i></i></b>
+					<ul>
+						<li><span class="host">104.130.142.119:27017</span><span class="message">OK</span></li>
+						<li><span class="host">23.253.246.68:27017</span><span class="message">OK</span></li>
+						<li><span class="host">67.192.246.65:27017</span><span class="message">OK</span></li>
+					</ul>
+				</li>
+			</ul>
+		</div>		<div>
+			<h2>Error Logs</h2>
+			<ul>
+				<li>
+					<h3>configsvr</h3>
+					<ul>
+						<li><span class="host"><b>23.253.225.123:27017</b></span>
+							<br/>
+							<span class="message"><pre>2016-09-14T02:33:31.449-0500 W NETWORK  [thread1] Failed to connect to 23.253.225.123:27017, reason: errno:61 Connection refused
+2016-09-14T02:33:31.450-0500 E QUERY    [thread1] Error: couldn't connect to server 23.253.225.123:27017, connection attempt failed :
+connect@src/mongo/shell/mongo.js:231:14
+@(connect):1:21
+
+exception: connect failed
+</pre></span></li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+		<div>
+			<h2>Unacknowledged Backup Failures</h2>
+			<i>Truncate /Users/chalupaul/backups/BACKUP-FAILURES to acknowldge the errors.</i>
+			<ul>
+				<li><span class="host"><b>2016-09-14_03:10</b></span>
+					<br/>
+					<span class="message"><pre>2016-09-13T22:10:54.575-0500	Failed: error dumping metadata: error running `listIndexes`. Collection: `paultest1.testings` Err: read tcp 192.168.0.18:54688-&gt;23.253.125.221:27017: read: connection reset by peer
+</pre></span>
+				</li>
+			</ul>
+		</div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{{#backups}}
+<div>
+	<h2>Unacknowledged Backup Failures</h2>
+	<i>{{message}}</i>
+	<ul>
+		{{#logs}}
+		<li><span class="host"><b>{{date}}</b></span>
+			<br/>
+			<span class="message"><pre>{{message}}</pre></span>
+		</li>
+		{{/logs}}
+	</ul>
+</div>
+{{/backups}}
