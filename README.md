@@ -15,7 +15,7 @@ Pro tip: Make your webserver not serve config.ini unless you like your passwords
 
 ```
 <filesMatch "\.(ini)$">
-	Order Allow, Deny
+	Order deny,allow
 	Deny from all
 </filesMatch>
 ```

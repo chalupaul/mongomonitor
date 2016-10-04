@@ -14,7 +14,7 @@ function makeCommandString($ip, $command) {
     return join(' ', ['mongo', 
 					  "--authenticationDatabase", $config['authdb'], 
 					  "-u", $config['username'], 
-					  "-p", $config['password'], 
+					  "-p", "'" . addslashes($config['password']) . "'", 
 					  "--quiet",
 					  $ip, 
 					  "--eval", $fixupCommand, 
