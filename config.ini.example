@@ -21,6 +21,7 @@ username = "backup"
 password = "CHANGE_ME"
 authdb = "admin"
 ;
+;
 [backups]
 ;
 ; Where to store backups

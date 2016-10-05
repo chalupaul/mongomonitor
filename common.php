@@ -59,11 +59,7 @@ function commandRunner($command, $tries=3) {
 		if (!preg_match('/exception: connect failed/', $output)) {
 			break;
 		}
-		# The usual wait time is like, 6-7 seconds so just go 10 to be safe.
-		# If you were to change this to 10 3 second tries, you'd just keep
-		# connections permanently in CLOSE_WAIT state and kind of defeat
-		# the purpose of waiting for them to clear.
-		sleep(2);
+		sleep(10);
 	}
 	return $output;
 }
