@@ -63,7 +63,7 @@ function commandRunner($command, $tries=3) {
 		# If you were to change this to 10 3 second tries, you'd just keep
 		# connections permanently in CLOSE_WAIT state and kind of defeat
 		# the purpose of waiting for them to clear.
-		sleep(10);
+		sleep(2);
 	}
 	return $output;
 }
@@ -78,6 +78,63 @@ function combineArrays($a, $b) {
 		array_diff($a, $b),
 		array_diff($b, $a)
 	);
+}
+
+function makeLogs() {
+	global $failures;
+	$vals = array();
+	foreach(array_keys($failures) as $clusterType) {
+		$v = array();
+		foreach(array_keys($failures[$clusterType]) as $host) {
+			array_push($v, array(
+				"url" => $host,
+				"message" => $failures[$clusterType][$host]
+			));
+		}
+		array_push($vals, array(
+			"name" => $clusterType,
+			"hosts" => $v
+		));
+	}
+	return $vals;
+}
+
+function makeBackupErrors() {
+	$backupErrorsFile = locateBackupFile('BACKUP-FAILURES');
+	$returnVals = array();
+	$vals = array();
+	if (file_exists($backupErrorsFile)) {
+		$contents = file($backupErrorsFile);
+		if (!empty($contents)) {
+			foreach ($contents as $datestamp) {
+				$datestamp = trim($datestamp);
+				$logFile = locateBackupFile('backup-' . $datestamp . '.log');
+				$logContents = file_get_contents($logFile);
+				array_push($vals, array(
+					'date' => $datestamp,
+					'message' => $logContents
+				));
+			}
+		}
+	}
+	if (!empty($vals)) {
+		$returnVals = array(
+			"message" => "Truncate $backupErrorsFile to acknowldge the errors.",
+			"logs" => $vals
+		);
+	}
+	return $returnVals;
+}
+
+function makeErrorText($b) {
+	# $b is inverse. True is false.
+	$text = null;
+	if (!$b) {
+		$text = 'OK';
+	} else {
+		$text = 'NOT OK';
+	}
+	return $text;
 }
 
 function locateBackupFile($fileName) {
