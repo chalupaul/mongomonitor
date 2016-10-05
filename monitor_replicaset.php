@@ -12,10 +12,11 @@ $m = new Mustache_Engine(array(
 
 $failures = [];
 $config = loadConfig();
+$shardName = 'repls';
 
 
 foreach ($config['mongos'] as $server) {
-	$shardName = 'repls';
+	global $shardName;
 	isServerOk($server, $shardName);
 	$output = commandRunner(makeCommandString($server, "rs.status()"));
 	$isOK = preg_match('/"ok" : 1/', $output);
@@ -29,12 +30,16 @@ foreach ($config['mongos'] as $server) {
 function makeHosts() {
 	global $failures;
 	global $config;
-	$shardName = 'repls';
+	global $shardName;
 	$vals = [];
 	foreach ($config['mongos'] as $server) {
 		$x = [];
 		$x['url'] = $server;
-		$hasError = in_array($server, array_keys($failures[$shardName]));
+		$failArray = [];
+		if (in_array($shardName, $failures)) {
+			$failArray = array_keys($failures[$shardName]);
+		}
+		$hasError = in_array($server, $failArray);
 		if ($hasError) {
 			$x['errorStatus'] = 'NOT OK';
 		} else {
