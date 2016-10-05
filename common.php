@@ -59,7 +59,7 @@ function commandRunner($command, $tries=3) {
 		if (!preg_match('/exception: connect failed/', $output)) {
 			break;
 		}
-		sleep(10);
+		sleep(5);
 	}
 	return $output;
 }

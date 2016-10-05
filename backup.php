@@ -37,7 +37,7 @@ $filename = locateBackupFile($archiveName);
 $options = [
 	"--host", $mongosIp,
 	"-u", $config['username'],
-	"-p", $config['password'],
+	"-p", "'" . addslashes($config['password']) . "'",
 	"--authenticationDatabase", $config['authdb'],
 	"--gzip",
 	"--archive=$filename",
