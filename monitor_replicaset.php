@@ -36,7 +36,7 @@ function makeHosts() {
 		$x = [];
 		$x['url'] = $server;
 		$failArray = [];
-		if (in_array($shardName, $failures)) {
+		if (in_array($shardName, array_keys($failures))) {
 			$failArray = array_keys($failures[$shardName]);
 		}
 		$hasError = in_array($server, $failArray);
